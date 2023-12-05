@@ -23,14 +23,16 @@ type part struct {
 	valid  bool
 }
 
-func newPart(lineNum int, line string, number string) part {
+func newPart(lineNum int, line string, number string, dupe int) part {
 	matchxp := fmt.Sprintf(`(^|\D)%s(\D|$)`, number)
 	re := regexp.MustCompile(matchxp)
+	match := re.FindAllStringIndex(line, -1)
 
-	start := re.FindStringIndex(line)[0] + 1
+	//fmt.Printf("%s \t %v\n", line[match[dupe][0]:match[dupe][1]], match)
+
+	start := match[dupe][0] + 1
 	end := start + len(number)
 
-	//fmt.Printf("%s - %d:%d\n", number, start, end)
 	value, err := strconv.Atoi(number)
 	if err != nil {
 		fmt.Println(err)
@@ -44,7 +46,7 @@ func (p *part) toString() string {
 	if p.valid {
 		return fmt.Sprintf("%d", p.number)
 	} else {
-		return fmt.Sprintf("%d*", p.number)
+		return fmt.Sprintf("%d *invalid", p.number)
 	}
 }
 
@@ -55,24 +57,24 @@ func (p *part) checkAdjacent() bool {
 	minX := max(0, p.start-1)
 	maxX := min(len(schematic[0]), p.end+1)
 
-	hasSymbol := false
 	for i := minY; i <= maxY; i++ {
 		span := schematic[i][minX:maxX]
-		if !hasSymbol {
-			hasSymbol = strings.ContainsAny(span, ",/?!@#$%^&*()[]`~;:{}|-=_+ '\\\"")
-		}
+
+		hasSymbol := strings.ContainsAny(span, ",/?!@#$%^&*()[]`~;:{}|-=_+ '\\\"")
 
 		if gearIdx := strings.Index(span, "*"); gearIdx >= 0 {
 			gearLoc := fmt.Sprintf("%dx%d", minX+gearIdx, i)
-			if !slices.Contains(gears[gearLoc], p.number) {
-				gears[gearLoc] = append(gears[gearLoc], p.number)
-			}
+			gears[gearLoc] = append(gears[gearLoc], p.number)
 		}
 
 		//fmt.Printf("%d \t %s \t [%d][%d:%d]\n", p.number, span, i, minX, maxX)
+
+		if hasSymbol {
+			return true
+		}
 	}
 
-	return hasSymbol
+	return false
 }
 
 func main() {
@@ -97,9 +99,17 @@ func partOne() {
 		re := regexp.MustCompile("\\D")
 		numberStrings := re.Split(line, -1)
 
+		partsOnLine := []string{}
+		dupeCount := map[string]int{}
+
 		for _, n := range numberStrings {
 			if n != "" {
-				part := newPart(lineNum, line, n)
+				if slices.Contains(partsOnLine, n) {
+					dupeCount[n] += 1 // fuck this actually
+				}
+				partsOnLine = append(partsOnLine, n)
+
+				part := newPart(lineNum, line, n, dupeCount[n])
 
 				if part.checkAdjacent() {
 					part.valid = true
@@ -111,16 +121,12 @@ func partOne() {
 
 	// gears for pt 2
 	gearTotals := 0
-	for k, v := range gears {
+	for _, v := range gears {
 		if len(v) > 1 {
-			ratio := 1
-			for _, g := range v {
-				ratio *= g
-			}
+			ratio := v[0] * v[1]
 			gearTotals += ratio
-			fmt.Printf("[%s] = %v \t\t %d \t\t%d\n", k, v, ratio, gearTotals)
+			//fmt.Printf("[%s] = %v \t%d\t \t %d\n", k, v, ratio, gearTotals)
 		}
-
 	}
 
 	fmt.Println(total)
