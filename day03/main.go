@@ -6,11 +6,14 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
 
 var schematic = []string{}
+
+var gears = map[string][]int{}
 
 type part struct {
 	line   int
@@ -21,10 +24,13 @@ type part struct {
 }
 
 func newPart(lineNum int, line string, number string) part {
-	start := strings.Index(line, number)
+	matchxp := fmt.Sprintf(`(^|\D)%s(\D|$)`, number)
+	re := regexp.MustCompile(matchxp)
+
+	start := re.FindStringIndex(line)[0] + 1
 	end := start + len(number)
 
-	fmt.Printf("%s - %d:%d\n", number, start, end)
+	//fmt.Printf("%s - %d:%d\n", number, start, end)
 	value, err := strconv.Atoi(number)
 	if err != nil {
 		fmt.Println(err)
@@ -52,12 +58,19 @@ func (p *part) checkAdjacent() bool {
 	hasSymbol := false
 	for i := minY; i <= maxY; i++ {
 		span := schematic[i][minX:maxX]
-		hasSymbol = strings.ContainsAny(span, ",/?!@#$%^&*()[]`~;:{}|-=_+ '\\\"")
+		if !hasSymbol {
+			hasSymbol = strings.ContainsAny(span, ",/?!@#$%^&*()[]`~;:{}|-=_+ '\\\"")
+		}
 
-		fmt.Printf("%d \t %s \t [%d][%d:%d] \t %d\n", p.number, span, i, minX, maxX, hasSymbol)
+		if gearIdx := strings.Index(span, "*"); gearIdx >= 0 {
+			gearLoc := fmt.Sprintf("%dx%d", minX+gearIdx, i)
+			if !slices.Contains(gears[gearLoc], p.number) {
+				gears[gearLoc] = append(gears[gearLoc], p.number)
+			}
+		}
+
+		//fmt.Printf("%d \t %s \t [%d][%d:%d]\n", p.number, span, i, minX, maxX)
 	}
-
-	fmt.Println()
 
 	return hasSymbol
 }
@@ -67,7 +80,7 @@ func main() {
 }
 
 func partOne() {
-	file, err := os.Open("input2.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -81,28 +94,35 @@ func partOne() {
 	}
 
 	for lineNum, line := range schematic {
-		//fmt.Printf("%d\t%s\n", lineNum, line)
-
 		re := regexp.MustCompile("\\D")
 		numberStrings := re.Split(line, -1)
 
 		for _, n := range numberStrings {
 			if n != "" {
-				//fmt.Println(n)
-
 				part := newPart(lineNum, line, n)
 
 				if part.checkAdjacent() {
-					//fmt.Println(part.number)
 					part.valid = true
 					total += part.number
 				}
-
-				//fmt.Println(part.toString())
 			}
+		}
+	}
+
+	// gears for pt 2
+	gearTotals := 0
+	for k, v := range gears {
+		if len(v) > 1 {
+			ratio := 1
+			for _, g := range v {
+				ratio *= g
+			}
+			gearTotals += ratio
+			fmt.Printf("[%s] = %v \t\t %d \t\t%d\n", k, v, ratio, gearTotals)
 		}
 
 	}
 
 	fmt.Println(total)
+	fmt.Println(gearTotals)
 }
