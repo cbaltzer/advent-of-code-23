@@ -11,10 +11,6 @@ import (
 )
 
 func main() {
-	partOne()
-}
-
-func partOne() {
 	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatalln(err)
@@ -23,7 +19,10 @@ func partOne() {
 
 	scanner := bufio.NewScanner(file)
 
+	cardCounts := map[int]int{}
+
 	total := 0
+	lineNum := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -40,12 +39,27 @@ func partOne() {
 			}
 		}
 
+		cardCounts[lineNum] += 1 // count the originals
+		for c := 0; c < cardCounts[lineNum]; c++ {
+			for i := lineNum + 1; i <= lineNum+matchCount; i++ {
+				cardCounts[i] += 1
+			}
+		}
+
 		points := int(math.Pow(2, float64(matchCount-1)))
 
 		if matchCount > 0 {
 			total += points
 		}
+
+		lineNum += 1
+	}
+
+	totalCards := 0
+	for _, count := range cardCounts {
+		totalCards += count
 	}
 
 	fmt.Println(total)
+	fmt.Println(totalCards)
 }
