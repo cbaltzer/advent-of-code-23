@@ -22,11 +22,12 @@ const (
 	FiveOfAKind
 )
 
-const CardPriority = "23456789TJQKA"
+const CardPriority = "J23456789TQKA"
 
 type Hand struct {
 	cards    string
 	strength HandType
+	bestFace string
 	bid      int
 }
 
@@ -41,6 +42,23 @@ func newHand(line string) Hand {
 		c := string(r)
 		cardCounts[c] += 1
 	}
+
+	jokerCount := cardCounts["J"]
+	bestCardFace := ""
+	for k, v := range cardCounts {
+		if k != "J" {
+			if v > cardCounts[bestCardFace] {
+				bestCardFace = k
+			}
+			if v == cardCounts[bestCardFace] {
+				if strings.Index(CardPriority, k) >= strings.Index(CardPriority, bestCardFace) {
+					bestCardFace = k
+				}
+			}
+		}
+	}
+	cardCounts["J"] = 0
+	cardCounts[bestCardFace] += jokerCount
 
 	var strength HandType = HighCard
 	for _, v := range cardCounts {
@@ -68,7 +86,11 @@ func newHand(line string) Hand {
 		}
 	}
 
-	return Hand{cards: hand, strength: strength, bid: bid}
+	return Hand{cards: hand, strength: strength, bestFace: bestCardFace, bid: bid}
+}
+
+func (h *Hand) toString() string {
+	return fmt.Sprintf("%s \t %s \t[%d]\n", h.cards, h.bestFace, h.strength)
 }
 
 func handLess(h1 Hand, h2 Hand) bool {
@@ -85,7 +107,7 @@ func handLess(h1 Hand, h2 Hand) bool {
 }
 
 func main() {
-	file, err := os.Open("input.txt")
+	file, err := os.Open("../input.txt")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -109,7 +131,8 @@ func main() {
 	total := 0
 	for i, h := range hands {
 		total += (i + 1) * h.bid
-		fmt.Printf("%s %d \t\t[%d * $%d]\n", h.cards, h.strength, i+1, h.bid)
+		fmt.Printf(h.toString())
+		//fmt.Printf("%s %d \t\t[%d * $%d]\n", h.cards, h.strength, i+1, h.bid)
 	}
 
 	fmt.Println(total)
