@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -19,12 +18,12 @@ func main() {
 
 	total := 0
 	for scanner.Scan() {
-		line := scanner.Text()
-		sequence := strings.Split(line, " ")
+		//line := scanner.Text()
+		//sequence := strings.Split(line, " ")
 
 		// n/2(2a + (n-1)d)
-		n := len(sequence)
-		a := sequence[0]
+		//n := len(sequence)
+		//a := sequence[0]
 
 	}
 
