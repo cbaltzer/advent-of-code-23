@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -14,11 +13,11 @@ type galaxy struct {
 	x, y int
 }
 
+var expansionSize = 100 - 1
 var universe = [][]string{}
-var expandedUniverse = [][]string{}
 
 func main() {
-	file, err := os.Open("input.txt")
+	file, err := os.Open("input2.txt")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -33,10 +32,10 @@ func main() {
 	}
 
 	// vertical expansion
-	for _, row := range universe {
-		expandedUniverse = append(expandedUniverse, row)
+	emptyRows := []int{}
+	for y, row := range universe {
 		if !slices.Contains(row, "#") {
-			expandedUniverse = append(expandedUniverse, row)
+			emptyRows = append(emptyRows, y)
 		}
 	}
 
@@ -53,21 +52,14 @@ func main() {
 			emptyCols = append(emptyCols, x)
 		}
 	}
-	for i, col := range emptyCols {
-		for y, _ := range expandedUniverse {
-			expandedUniverse[y] = slices.Insert(expandedUniverse[y], col+i, ".")
-		}
-	}
 
 	galaxies := []galaxy{}
-	for y, row := range expandedUniverse {
+	for y, row := range universe {
 		for x, _ := range row {
-			point := expandedUniverse[y][x]
+			point := universe[y][x]
 			if point == "#" {
 				galaxies = append(galaxies, galaxy{x: x, y: y})
-				point = strconv.Itoa(len(galaxies))
 			}
-
 			fmt.Printf("%s", point)
 		}
 		fmt.Printf("\n")
@@ -77,13 +69,43 @@ func main() {
 	for i, g1 := range galaxies {
 		for j, g2 := range galaxies[i+1:] {
 
-			absX := max(g1.x, g2.x) - min(g1.x, g2.x)
-			absY := max(g1.y, g2.y) - min(g1.y, g2.y)
+			g1he := 0
+			g1ve := 0
+
+			g2he := 0
+			g2ve := 0
+
+			for _, xe := range emptyCols {
+				if xe < g1.x {
+					g1he++
+				}
+				if xe < g2.x {
+					g2he++
+				}
+			}
+
+			for _, ye := range emptyRows {
+				if ye < g1.y {
+					g1ve++
+				}
+				if ye < g2.y {
+					g2ve++
+				}
+			}
+
+			g1x := g1.x + (g1he * expansionSize)
+			g1y := g1.y + (g1ve * expansionSize)
+
+			g2x := g2.x + (g2he * expansionSize)
+			g2y := g2.y + (g2ve * expansionSize)
+
+			absX := max(g1x, g2x) - min(g1x, g2x)
+			absY := max(g1y, g2y) - min(g1y, g2y)
 
 			if g1 != g2 {
 				distance := absX + absY
 				total += distance
-				fmt.Printf("G%d (%d,%d) --> G%d (%d,%d) \t [%d]\n", i+1, g1.x, g1.y, i+1+j+1, g2.x, g2.y, distance)
+				fmt.Printf("G%d (%d,%d) --> G%d (%d,%d) \t [%d]\n", i+1, g1x, g1y, i+1+j+1, g2x, g2y, distance)
 			}
 
 		}

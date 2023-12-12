@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 type Direction uint
@@ -45,6 +46,38 @@ func (n Node) Advance() Node {
 
 	n.next = &next
 	return next
+}
+
+func (n Node) TurnsLeft() bool {
+	if n.input == North && n.output == East {
+		return true
+	}
+	if n.input == East && n.output == South {
+		return true
+	}
+	if n.input == South && n.output == West {
+		return true
+	}
+	if n.input == West && n.output == North {
+		return true
+	}
+	return false
+}
+
+func (n Node) TurnsRight() bool {
+	if n.input == North && n.output == West {
+		return true
+	}
+	if n.input == East && n.output == North {
+		return true
+	}
+	if n.input == South && n.output == East {
+		return true
+	}
+	if n.input == West && n.output == South {
+		return true
+	}
+	return false
 }
 
 func (n Node) GetNorth() Node {
@@ -134,7 +167,9 @@ func (n Node) GetWest() Node {
 	return next
 }
 
+var path = []Node{}
 var grid = []string{}
+var gridCopy = [][]string{}
 
 func main() {
 	file, err := os.Open("input.txt")
@@ -153,6 +188,7 @@ func main() {
 	var start Node
 	var realStart Node
 	for y, line := range grid {
+		gridCopy = append(gridCopy, strings.Split(line, ""))
 		for x, r := range line {
 			location := string(r)
 
@@ -171,20 +207,47 @@ func main() {
 				if w := string(grid[y+1][x]); w == "L" || w == "-" || w == "F" {
 					realStart = start.GetWest()
 				}
-
 			}
+
+			gridCopy[y][x] = "."
 		}
 	}
 
 	var curr = realStart
 
+	path = append(path, start)
+
 	i := 1
+	area := 0
+
 	for curr.symbol != "S" && i < 10000000 {
-		fmt.Println(curr)
+		path = append(path, curr)
+		if curr.TurnsLeft() {
+			area--
+		}
+		if curr.TurnsRight() {
+			area++
+		}
+
 		i++
 		curr = curr.Advance()
 	}
-
 	fmt.Println(i / 2)
+
+	// Part 2
+
+	for _, n := range path {
+		gridCopy[n.y][n.x] = n.symbol
+	}
+
+	for y := 0; y < len(gridCopy); y++ {
+		for x := 0; x < len(gridCopy[y]); x++ {
+			point := gridCopy[y][x]
+			fmt.Printf("%s", point)
+		}
+		fmt.Printf("\n")
+	}
+
+	fmt.Println(area)
 
 }
