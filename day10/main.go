@@ -48,38 +48,6 @@ func (n Node) Advance() Node {
 	return next
 }
 
-func (n Node) TurnsLeft() bool {
-	if n.input == North && n.output == East {
-		return true
-	}
-	if n.input == East && n.output == South {
-		return true
-	}
-	if n.input == South && n.output == West {
-		return true
-	}
-	if n.input == West && n.output == North {
-		return true
-	}
-	return false
-}
-
-func (n Node) TurnsRight() bool {
-	if n.input == North && n.output == West {
-		return true
-	}
-	if n.input == East && n.output == North {
-		return true
-	}
-	if n.input == South && n.output == East {
-		return true
-	}
-	if n.input == West && n.output == South {
-		return true
-	}
-	return false
-}
-
 func (n Node) GetNorth() Node {
 	dx := n.x
 	dy := max(0, n.y-1)
@@ -220,22 +188,15 @@ func main() {
 	i := 1
 	area := 0
 
-	for curr.symbol != "S" && i < 10000000 {
+	for curr.symbol != "S" && i < 100000000 {
 		path = append(path, curr)
-		if curr.TurnsLeft() {
-			area--
-		}
-		if curr.TurnsRight() {
-			area++
-		}
-
 		i++
 		curr = curr.Advance()
 	}
 	fmt.Println(i / 2)
+	fmt.Printf("\n\n\n")
 
 	// Part 2
-
 	for _, n := range path {
 		gridCopy[n.y][n.x] = n.symbol
 	}
@@ -243,9 +204,27 @@ func main() {
 	for y := 0; y < len(gridCopy); y++ {
 		for x := 0; x < len(gridCopy[y]); x++ {
 			point := gridCopy[y][x]
+
+			inside := 0
+			if point == "." {
+				for r := 0; r < x; r++ {
+					innerPoint := gridCopy[y][r]
+
+					if strings.ContainsAny(innerPoint, "LJ|S") {
+						inside++
+					}
+
+				}
+			}
+
+			if inside%2 != 0 {
+				area += 1
+				point = "X"
+			}
+
 			fmt.Printf("%s", point)
 		}
-		fmt.Printf("\n")
+		fmt.Printf("\t%d\n", area)
 	}
 
 	fmt.Println(area)
